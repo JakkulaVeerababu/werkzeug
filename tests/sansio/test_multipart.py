@@ -180,3 +180,33 @@ Content-Type: text/plain; charset="UTF-8"
     for event in events:
         result += encoder.send_event(event)
     assert data == result
+
+
+def test_decoder_chunk_split_near_boundary() -> None:
+    boundary = b"WZBOUND"
+    body = (
+        b'--WZBOUND\r\nContent-Disposition: form-data; name="a"\r\n\r\n'
+        b"\r\n--WZBOUND--\r\n"
+    )
+    for chunk_size in (1, 2, 3, 5, 10, len(body)):
+        chunks = [body[i : i + chunk_size] for i in range(0, len(body), chunk_size)]
+        dec = MultipartDecoder(boundary)
+        data = bytearray()
+        ci, fed_end = 0, False
+        while True:
+            ev = dec.next_event()
+            if ev.__class__.__name__ == "NeedData":
+                if ci < len(chunks):
+                    dec.receive_data(chunks[ci])
+                    ci += 1
+                elif not fed_end:
+                    dec.receive_data(None)
+                    fed_end = True
+                else:
+                    break
+                continue
+            if ev.__class__.__name__ == "Data":
+                data.extend(ev.data)
+            if ev.__class__.__name__ == "Epilogue":
+                break
+        assert bytes(data) == b""

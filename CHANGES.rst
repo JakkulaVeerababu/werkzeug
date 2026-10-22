@@ -3,6 +3,9 @@
 Version 3.2.0
 -------------
 
+-   The multipart form parser accounts for boundary suffixes when checking for
+    partial boundaries, preventing a stray byte from being appended when chunks
+    split near a boundary. :issue:`3285`
 -   Drop support for Python 3.9 and 3.10. :pr:`3098`
 -   Remove previous deprecated code: :pr:`3099`
 
